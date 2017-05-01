@@ -49,6 +49,14 @@ namespace Timeclock_Reader
       }
     }
 
+    public DateTime PayPeriodEnding
+    {
+      get
+      {
+        return Program.GetPayPeriodStart(RawPunchDate).AddDays(13);
+      }
+    }
+
     public bool IsPastCutoff()
     {
       // cutoff is 10 AM of the first day on the new pay period.
@@ -121,6 +129,17 @@ namespace Timeclock_Reader
       }
     }
 
+    public bool Exists(List<Timeclock_Data> ltcd)
+    {
+      // this function is going to check and see if a record already exists in the list provided
+      // that matches this employee number and raw punch date, and source.
+      return (from l in ltcd
+              where l.EmployeeId == EmployeeId &&
+              l.RawPunchDate == RawPunchDate &&
+              l.Source == Source
+              select l).Count() > 0;
+    }
+
     static public List<Timeclock_Data> GetQqestData(DateTime Start)
     {
       var dbArgs = new DynamicParameters();
@@ -139,10 +158,45 @@ namespace Timeclock_Reader
       return Program.Get_Data<Timeclock_Data>(sql, dbArgs, Program.CS_Type.Qqest);
     }
 
-    static public bool Save(List<Timeclock_Data> tcd)
+    public bool SavePunch()
     {
-      return false;
+      // this function will save this object's data to the timeclockdata table.
+      string sql = @"
+        INSERT INTO Timeclock_Data 
+        (employee_id, raw_punch_date, rounded_punch_date, source)
+        VALUES (@EmployeeId, @RawPunchDate, @RoundedPunchDate, @Source);";
+      try
+      {
+        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
+      }
+      catch(Exception e)
+      {
+        Program.Log(e, sql);
+        return false;
+      }
+
     }
+
+    public bool UpdateTimeStore()
+    {
+      // it will update the work_hours table in Timestore
+      // finally, we'll add a note for each timeclock entry.  
+      // The format of the note will be Time punch <real time> rounded to <rounded time>
+      string sql = @"
+        INSERT INTO Timeclock_Data 
+        (employee_id, raw_punch_date, rounded_punch_date, source)
+        VALUES (@EmployeeId, @RawPunchDate, @RoundedPunchDate, @Source);";
+      try
+      {
+        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
+      }
+      catch (Exception e)
+      {
+        Program.Log(e, sql);
+        return false;
+      }
+    }
+
 
   }
 }

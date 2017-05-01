@@ -68,16 +68,39 @@ namespace Timeclock_Reader
     static void HandleFiles()
     {
       // load data from files
-      var files = GetFiles();
-      var tcd = ParseFiles(files);
-      // exclude stuff prior this this pay period
+      var files = GetFiles(); // get the filenames
+      var tcd = ParseFiles(files); //Load the files into Timeclock_Data objects
+      if (tcd.Count() == 0) return; // if we don't find any entries in our files, we should exit.
+      DateTime earliest = (from t in tcd
+                           orderby t.RawPunchDate ascending
+                           select t.RawPunchDate).First();
+      // load data from database to compare
+      var existingdata = Timeclock_Data.GetSavedTimeClockData(earliest, Source_QQest);
+      // remove duplicates
+      tcd = (from t in tcd
+             where !t.Exists(existingdata)
+             select t).ToList();
+      if (tcd.Count() == 0) return; // if we don't find any entries in our files, we should exit.
+
+      // At this stage, tcd should contain any data that doesn't exist
+      // in the Timeclock_Data in Timestore.
+      // We'll save them to that table to start, because regardless of the age,
+      // we should be saving punches if they don't exist yet.
+      foreach (Timeclock_Data t in tcd)
+      {
+        t.SavePunch();
+      }
+      
+      // exclude stuff prior this this pay period, 
+      // we wouldn't use this data to update Timestore.
       tcd = (from t in tcd
              where !t.IsPastCutoff()
              select t).ToList();
+      
+      
+      
 
-      // load data from database to compare
-
-      // remove duplicates
+      
       // save new
 
       // move old files
