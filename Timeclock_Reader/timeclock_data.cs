@@ -40,7 +40,14 @@ namespace Timeclock_Reader
             return RawPunchDate.AddSeconds(2700 - totalSeconds);
 
           case 7: // 52.5 to 60 mins
-            return RawPunchDate.AddSeconds(3600 - totalSeconds);
+            if (RawPunchDate.Hour == 23)
+            { // this is how we handle the edge case for punches that are just before midnight.
+              return RawPunchDate.AddSeconds(3600 - totalSeconds - 1);
+            }
+            else
+            {
+              return RawPunchDate.AddSeconds(3600 - totalSeconds);
+            }
 
           default:
             return RawPunchDate;
@@ -54,6 +61,14 @@ namespace Timeclock_Reader
       get
       {
         return Program.GetPayPeriodStart(RawPunchDate).AddDays(13);
+      }
+    }
+
+    public string Note
+    {
+      get
+      {
+        return $"Timeclock punched at {RawPunchDate.ToString("MM/dd/yyyy hh:mm:ss AMPM") }, rounded to {RoundedPunchDate.ToString("MM/dd/yyyy hh:mm:ss AMPM")}";
       }
     }
 
@@ -146,9 +161,8 @@ namespace Timeclock_Reader
       dbArgs.Add("@Start", Start);
       string sql = $@"
           SELECT 
-            timeWorkingPunch.workingpunch_id Location,
             empMain.employeeid EmployeeId,
-            'q' AS Source,
+            'Q' AS Source,
             rawpunch_ts RawPunchDate
           FROM empMain 
           INNER JOIN timeWorkingPunch ON empMain.employee_id = timeWorkingPunch.employee_id 
@@ -180,8 +194,7 @@ namespace Timeclock_Reader
     public bool UpdateTimeStore()
     {
       // it will update the work_hours table in Timestore
-      // finally, we'll add a note for each timeclock entry.  
-      // The format of the note will be Time punch <real time> rounded to <rounded time>
+
       string sql = @"
         INSERT INTO Timeclock_Data 
         (employee_id, raw_punch_date, rounded_punch_date, source)
@@ -197,6 +210,25 @@ namespace Timeclock_Reader
       }
     }
 
+    public bool SaveTimeStoreNote()
+    {
+      // finally, we'll add a note for each timeclock entry.  
+      // The format of the note will be Time punch <real time> rounded to <rounded time>
+      string sql = @"
+        INSERT INTO notes 
+        (employee_id, pay_period_ending, note, note_added_by)
+        VALUES (@EmployeeId, @PayPeriodEnding, @Note, 'Timeclock_Reader');";
+      try
+      {
+        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
+      }
+      catch (Exception e)
+      {
+        Program.Log(e, sql);
+        return false;
+      }
+
+    }
 
   }
 }

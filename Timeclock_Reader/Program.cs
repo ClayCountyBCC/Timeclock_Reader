@@ -21,6 +21,7 @@ namespace Timeclock_Reader
     public static string Timestore_CS = "";
     public static string Qqest_CS = "";
     const string File_Path = @"\\claybccpubtime\c$\TA100PRO\CLK\RFILES"; // location of the files we're going to parse.
+    const string Old_File_Path = @"\\claybccpubtime\c$\TA100PRO\CLK\RFILES\Old";
 
 
     public enum CS_Type
@@ -52,7 +53,6 @@ namespace Timeclock_Reader
       Timestore_QA_CS = ConfigurationManager.ConnectionStrings["TimestoreQA"].ConnectionString;
       Timestore_CS = ConfigurationManager.ConnectionStrings["TimestoreProd"].ConnectionString;
       Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
-      string TodaysFile = DateTime.Today.ToString("MMddyyyy") + ".R";
       HandleFiles();
       
       //var l = new List<Timeclock_Data>();
@@ -89,6 +89,7 @@ namespace Timeclock_Reader
       foreach (Timeclock_Data t in tcd)
       {
         t.SavePunch();
+        t.SaveTimeStoreNote();
       }
       
       // exclude stuff prior this this pay period, 
@@ -101,7 +102,7 @@ namespace Timeclock_Reader
       
 
       
-      // save new
+      // save the new entries to Timestore
 
       // move old files
       MoveOldFiles(files);
@@ -120,7 +121,21 @@ namespace Timeclock_Reader
       // so to figure out which file is today's, we'll generate
       // the filename for today's file and rename everything that's not that.
       string TodaysFile = DateTime.Today.ToString("MMddyyyy") + ".R";
-
+      foreach(string f in files)
+      {
+        if (Path.GetFileName(f) != TodaysFile)
+        {
+          // let's rename this sucker.
+          string NewFile = f.Replace(File_Path, Old_File_Path);
+          try
+          {
+            File.Move(f, NewFile);
+          } catch(Exception ex)
+          {
+            Program.Log(ex);
+          }
+        }
+      }
     }
 
 
@@ -186,6 +201,23 @@ namespace Timeclock_Reader
         using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
         {
           db.Execute(insertQuery, item);
+          return true;
+        }
+      }
+      catch (Exception ex)
+      {
+        Log(ex, insertQuery);
+        return false;
+      }
+    }
+
+    public static bool Save_Data(string insertQuery, DynamicParameters dbA, CS_Type cs)
+    {
+      try
+      {
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
+        {
+          db.Execute(insertQuery, dbA);
           return true;
         }
       }
