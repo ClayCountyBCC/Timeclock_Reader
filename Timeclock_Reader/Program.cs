@@ -20,6 +20,7 @@ namespace Timeclock_Reader
     public static string Timestore_QA_CS = "";
     public static string Timestore_CS = "";
     public static string Qqest_CS = "";
+    public static string Finplus_CS = "";
     const string File_Path = @"\\claybccpubtime\c$\TA100PRO\CLK\RFILES"; // location of the files we're going to parse.
     const string Old_File_Path = @"\\claybccpubtime\c$\TA100PRO\CLK\RFILES\Old";
 
@@ -28,6 +29,7 @@ namespace Timeclock_Reader
     {
       Timestore,
       Qqest,
+      Finplus,
       Log
     }
     //claybccpubtime
@@ -53,8 +55,9 @@ namespace Timeclock_Reader
       Timestore_QA_CS = ConfigurationManager.ConnectionStrings["TimestoreQA"].ConnectionString;
       Timestore_CS = ConfigurationManager.ConnectionStrings["TimestoreProd"].ConnectionString;
       Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
+      Finplus_CS = ConfigurationManager.ConnectionStrings["Finplus"].ConnectionString;
       HandleFiles();
-      
+
       //var l = new List<Timeclock_Data>();
       //var d = DateTime.Parse("1/1/2017 6:45:00 AM");
       //for(int i = 0; i < 100; i++)
@@ -65,44 +68,53 @@ namespace Timeclock_Reader
 
     }
 
+    static void HandleData(List<Timeclock_Data> current, string source)
+    {
+      DateTime earliest = (from t in current
+                           orderby t.RawPunchDate ascending
+                           select t.RawPunchDate).First();
+      // load data from database to compare
+      var existingdata = Timeclock_Data.GetSavedTimeClockData(earliest, source);
+      // remove duplicates
+      current = (from t in current
+             where !t.Exists(existingdata)
+             select t).ToList();
+      if (current.Count() == 0) return; // if we don't find any entries in our files, we should exit.
+
+      // At this stage, tcd should contain any data that doesn't exist
+      // in the Timeclock_Data in Timestore.
+      // We'll save them to that table to start, because regardless of the age,
+      // we should be saving punches if they don't exist yet.
+      foreach (Timeclock_Data t in current)
+      {
+        t.SavePunch();
+        t.SaveTimeStoreNote();
+      }
+
+      // exclude stuff prior this this pay period, 
+      // we wouldn't use this data to update Timestore.
+      current = (from t in current
+             where !t.IsPastCutoff()
+             select t).ToList();
+
+      // update our earliest date just in case it's changed
+      earliest = (from t in current
+                  orderby t.RawPunchDate ascending
+                  select t.RawPunchDate).First();
+
+      var wdl = Work_Hours.Get(earliest); // this is what is currently in Timestore
+
+      // save the new entries to Timestore
+    }
+
     static void HandleFiles()
     {
       // load data from files
       var files = GetFiles(); // get the filenames
       var tcd = ParseFiles(files); //Load the files into Timeclock_Data objects
       if (tcd.Count() == 0) return; // if we don't find any entries in our files, we should exit.
-      DateTime earliest = (from t in tcd
-                           orderby t.RawPunchDate ascending
-                           select t.RawPunchDate).First();
-      // load data from database to compare
-      var existingdata = Timeclock_Data.GetSavedTimeClockData(earliest, Source_QQest);
-      // remove duplicates
-      tcd = (from t in tcd
-             where !t.Exists(existingdata)
-             select t).ToList();
-      if (tcd.Count() == 0) return; // if we don't find any entries in our files, we should exit.
 
-      // At this stage, tcd should contain any data that doesn't exist
-      // in the Timeclock_Data in Timestore.
-      // We'll save them to that table to start, because regardless of the age,
-      // we should be saving punches if they don't exist yet.
-      foreach (Timeclock_Data t in tcd)
-      {
-        t.SavePunch();
-        t.SaveTimeStoreNote();
-      }
-      
-      // exclude stuff prior this this pay period, 
-      // we wouldn't use this data to update Timestore.
-      tcd = (from t in tcd
-             where !t.IsPastCutoff()
-             select t).ToList();
-      
-      
-      
-
-      
-      // save the new entries to Timestore
+      HandleData(tcd, Source_File);
 
       // move old files
       MoveOldFiles(files);
@@ -121,7 +133,7 @@ namespace Timeclock_Reader
       // so to figure out which file is today's, we'll generate
       // the filename for today's file and rename everything that's not that.
       string TodaysFile = DateTime.Today.ToString("MMddyyyy") + ".R";
-      foreach(string f in files)
+      foreach (string f in files)
       {
         if (Path.GetFileName(f) != TodaysFile)
         {
@@ -130,7 +142,8 @@ namespace Timeclock_Reader
           try
           {
             File.Move(f, NewFile);
-          } catch(Exception ex)
+          }
+          catch (Exception ex)
           {
             Program.Log(ex);
           }
@@ -138,14 +151,13 @@ namespace Timeclock_Reader
       }
     }
 
-
-    static List<Timeclock_Data>ParseFiles(List<string> files)
+    static List<Timeclock_Data> ParseFiles(List<string> files)
     {
       List<Timeclock_Data> tcd = new List<Timeclock_Data>();
-      foreach(string f in files)
+      foreach (string f in files)
       {
         string[] currentFile = File.ReadAllLines(f);
-        foreach(string cf in currentFile)
+        foreach (string cf in currentFile)
         {
           tcd.Add(new Timeclock_Data(cf));
         }
@@ -172,7 +184,8 @@ namespace Timeclock_Reader
       if (UseProduction())
       {
         return Source_File;
-      } else
+      }
+      else
       {
         return Source_QQest;
       }
@@ -185,6 +198,22 @@ namespace Timeclock_Reader
         using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
         {
           return (List<T>)db.Query<T>(query, dbA);
+        }
+      }
+      catch (Exception ex)
+      {
+        Log(ex, query);
+        return null;
+      }
+    }
+
+    public static List<T> Get_Data<T>(string query, CS_Type cs)
+    {
+      try
+      {
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
+        {
+          return (List<T>)db.Query<T>(query);
         }
       }
       catch (Exception ex)
@@ -244,11 +273,26 @@ namespace Timeclock_Reader
       }
     }
 
+    public static long Exec_Query<T>(string query, T item, CS_Type cs)
+    {
+      try
+      {
+        using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
+        {
+          return db.Execute(query, item);
+        }
+      }
+      catch (Exception ex)
+      {
+        Log(ex, query);
+        return -1;
+      }
+    }
+
     public static DateTime GetPayPeriodStart(DateTime start)
     {
       return start.AddDays(-(start.Subtract(DateTime.Parse("9/25/2013")).TotalDays % 14));
     }
-
 
     #region Log Code
 
@@ -310,10 +354,15 @@ namespace Timeclock_Reader
     {
       switch (cs)
       {
+        case CS_Type.Finplus:
+          return Finplus_CS;
+
         case CS_Type.Log:
           return Log_CS;
+
         case CS_Type.Qqest:
           return Qqest_CS;
+
         case CS_Type.Timestore:
           if (UseProduction())
           {

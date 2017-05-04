@@ -191,26 +191,7 @@ namespace Timeclock_Reader
 
     }
 
-    public bool UpdateTimeStore()
-    {
-      // it will update the work_hours table in Timestore
-
-      string sql = @"
-        INSERT INTO Timeclock_Data 
-        (employee_id, raw_punch_date, rounded_punch_date, source)
-        VALUES (@EmployeeId, @RawPunchDate, @RoundedPunchDate, @Source);";
-      try
-      {
-        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
-      }
-      catch (Exception e)
-      {
-        Program.Log(e, sql);
-        return false;
-      }
-    }
-
-    public bool SaveTimeStoreNote()
+     public bool SaveTimeStoreNote()
     {
       // finally, we'll add a note for each timeclock entry.  
       // The format of the note will be Time punch <real time> rounded to <rounded time>
