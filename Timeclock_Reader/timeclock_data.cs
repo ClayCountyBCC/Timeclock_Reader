@@ -72,7 +72,6 @@ namespace Timeclock_Reader
       }
     }
 
-
     public DateTime PayPeriodEnding
     {
       get

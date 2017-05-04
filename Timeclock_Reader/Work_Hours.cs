@@ -34,6 +34,49 @@ namespace Timeclock_Reader
       TotalHours = 0;
     }
 
+    public void AddPunch(Timeclock_Data tcd, string[] tl)
+    {
+      // this function will take a new timepunch and add it to 
+      // the existing work_hours row that we already have for that user.
+      if(WorkTimes.Length > 0)
+      {
+        WorkTimes += " - " + tcd.RoundedPunchTime_ToString;
+      }
+      else
+      {
+        WorkTimes = tcd.RoundedPunchTime_ToString;
+      }
+
+      string[] times = WorkTimes.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+
+      float initialWH = WorkHours;
+      float initialTH = TotalHours;
+
+      if (times.Length % 2 == 1)
+      {
+        // We added an odd punch, we shouldn't update any time calculations
+
+      }
+      else
+      {
+        // we need to get the hours between each of our entries
+        // sum it all up and update Workhours and TotalHours
+        // we've already updated WorkTimes
+        float WH = 0;
+        for(int i = 0; i < times.Length; i += 2)
+        {
+          int start = Array.IndexOf(tl, times[i]);
+          int end = Array.IndexOf(tl, times[i+1]);
+          WH += ((end - start) / 4);
+        }
+        if(WH != initialWH)
+        {
+          WorkHours = WH;
+          TotalHours = TotalHours - initialWH + WorkHours;
+        }
+      }
+    }
+
     public static List<Work_Hours> Get(DateTime work_date)
     {
       // this query returns everything from the earliest workday we have a timeclock stamp for.
@@ -54,7 +97,7 @@ namespace Timeclock_Reader
       return Program.Get_Data<Work_Hours>(sql, dp, Program.CS_Type.Timestore);
     }
 
-    public bool Update(Timeclock_Data tcd)
+    public bool Update()
     {
       string sql = @"
         UPDATE Work_Hours
@@ -81,7 +124,7 @@ namespace Timeclock_Reader
       }
     }
     
-    public bool Insert(Timeclock_Data tcd, Employee e)
+    public bool Insert()
     {
       string sql = @"
         INSERT INTO Work_Hours 
@@ -107,17 +150,7 @@ namespace Timeclock_Reader
       }
     }
     
-    private string[] Get_Timelist()
-    {
-      List<string> tl = new List<string>();
-      DateTime d = DateTime.Today;
-      for (int i = 0; i < 96; i++)
-      {
-        tl.Add(d.AddMinutes(15 * i).ToString("h:mm tt"));
-      }
-      tl.Add(d.AddSeconds(-1).ToString("h:mm:ss tt")); // add the 11:59:59 PM entry
-      return tl.ToArray();
-    }
+
 
   }
 }

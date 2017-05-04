@@ -16,7 +16,7 @@ namespace Timeclock_Reader
 
     }
 
-    static List<Employee> Get()
+    public static List<Employee> Get()
     {
       string sql = @"
         SELECT

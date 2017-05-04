@@ -75,10 +75,12 @@ namespace Timeclock_Reader
                            orderby t.RawPunchDate ascending
                            select t.RawPunchDate).First();
       // load data from database to compare
-      var existingdata = Timeclock_Data.GetSavedTimeClockData(earliest, source);
+      var existing = Timeclock_Data.GetSavedTimeClockData(earliest, source);
+      var timelist = Get_Timelist();
+      var employees = Employee.Get();
       // remove duplicates
       current = (from t in current
-             where !t.Exists(existingdata)
+             where !t.Exists(existing)
              select t).ToList();
 
       if (current.Count() == 0) return; // if we don't find any entries in our files, we should exit.
@@ -106,6 +108,34 @@ namespace Timeclock_Reader
       var wdl = Work_Hours.Get(earliest); // this is what is currently in Timestore
 
       // save the new entries to Timestore
+      foreach(Timeclock_Data t in current)
+      {
+        var check = (from w in wdl
+                     where w.EmployeeId == t.EmployeeId
+                     && w.WorkDate.Date == t.RoundedPunchDate.Date
+                     select w);
+        if(check.Count() > 0)
+        {
+          // we already have an entry for this person in Timestore, 
+          // we should update it rather than creating a new one.
+          var currentWork = check.First();
+          currentWork.AddPunch(t, timelist); // add this punch to this day
+          currentWork.Update(); // update the database.
+        }
+        else
+        {
+          // let's add our data to Timestore.
+          // First, we'll need to get the employee's department id
+          var depts = (from e in employees
+                       where e.EmployeeId == t.EmployeeId
+                       select e.DepartmentId).ToList();
+          string Dept = "";
+          if (depts.Count > 0) Dept = depts.First();
+
+          var w = new Work_Hours(t, Dept);
+          w.Insert(); // this will create a row in Timestore.
+        }
+      }
     }
 
     static void HandleFiles()
@@ -291,6 +321,18 @@ namespace Timeclock_Reader
     public static DateTime GetPayPeriodStart(DateTime start)
     {
       return start.AddDays(-(start.Subtract(DateTime.Parse("9/25/2013")).TotalDays % 14));
+    }
+
+    static string[] Get_Timelist()
+    {
+      List<string> tl = new List<string>();
+      DateTime d = DateTime.Today;
+      for (int i = 0; i < 96; i++)
+      {
+        tl.Add(d.AddMinutes(15 * i).ToString("h:mm tt"));
+      }
+      tl.Add(d.AddSeconds(-1).ToString("h:mm:ss tt")); // add the 11:59:59 PM entry
+      return tl.ToArray();
     }
 
     #region Log Code
