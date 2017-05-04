@@ -67,7 +67,7 @@ namespace Timeclock_Reader
         {
           int start = Array.IndexOf(tl, times[i]);
           int end = Array.IndexOf(tl, times[i+1]);
-          WH += ((end - start) / 4);
+          WH += ((float)(end - start) / 4);
         }
         if(WH != initialWH)
         {
