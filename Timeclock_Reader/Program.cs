@@ -70,6 +70,7 @@ namespace Timeclock_Reader
 
     static void HandleData(List<Timeclock_Data> current, string source)
     {
+      if (current.Count() == 0) return; // if we don't find any entries in our files, we should exit.
       DateTime earliest = (from t in current
                            orderby t.RawPunchDate ascending
                            select t.RawPunchDate).First();
@@ -79,8 +80,8 @@ namespace Timeclock_Reader
       current = (from t in current
              where !t.Exists(existingdata)
              select t).ToList();
-      if (current.Count() == 0) return; // if we don't find any entries in our files, we should exit.
 
+      if (current.Count() == 0) return; // if we don't find any entries in our files, we should exit.
       // At this stage, tcd should contain any data that doesn't exist
       // in the Timeclock_Data in Timestore.
       // We'll save them to that table to start, because regardless of the age,
@@ -111,10 +112,8 @@ namespace Timeclock_Reader
     {
       // load data from files
       var files = GetFiles(); // get the filenames
-      var tcd = ParseFiles(files); //Load the files into Timeclock_Data objects
-      if (tcd.Count() == 0) return; // if we don't find any entries in our files, we should exit.
 
-      HandleData(tcd, Source_File);
+      HandleData(ParseFiles(files), Source_File);
 
       // move old files
       MoveOldFiles(files);

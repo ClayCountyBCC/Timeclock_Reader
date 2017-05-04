@@ -15,13 +15,14 @@ namespace Timeclock_Reader
 
     public DateTime RawPunchDate { get; set; } = DateTime.MinValue;
 
-    public DateTime RoundedPunchDate {
+    public DateTime RoundedPunchDate
+    {
       get
       {
         if (RawPunchDate == DateTime.MinValue) return DateTime.MinValue;
         int totalSeconds = RawPunchDate.Minute * 60 + RawPunchDate.Second;
         int secondsIntoRank = (totalSeconds % 450);
-        int rank = (totalSeconds - secondsIntoRank)  / 450;
+        int rank = (totalSeconds - secondsIntoRank) / 450;
         switch (rank)
         {
           case 0: // 0 to 7.5 mins
@@ -51,10 +52,26 @@ namespace Timeclock_Reader
 
           default:
             return RawPunchDate;
-          
+
         }
       }
     }
+
+    public string RoundedPunchTime_ToString
+    {
+      get
+      {
+        if (RoundedPunchDate.Hour == 23 && RoundedPunchDate.Minute == 59)
+        { // this is how we handle the edge case for punches that are just before midnight.
+          return RoundedPunchDate.ToString("h:mm:ss tt");
+        }
+        else
+        {
+          return RoundedPunchDate.ToString("h:mm tt");
+        }
+      }
+    }
+
 
     public DateTime PayPeriodEnding
     {
@@ -104,7 +121,7 @@ namespace Timeclock_Reader
           EmployeeId = int.Parse(s[4]);
         }
       }
-      catch(Exception ex)
+      catch (Exception ex)
       {
         Program.Log(ex);
       }
@@ -183,7 +200,7 @@ namespace Timeclock_Reader
       {
         return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
       }
-      catch(Exception e)
+      catch (Exception e)
       {
         Program.Log(e, sql);
         return false;
@@ -191,7 +208,7 @@ namespace Timeclock_Reader
 
     }
 
-     public bool SaveTimeStoreNote()
+    public bool SaveTimeStoreNote()
     {
       // finally, we'll add a note for each timeclock entry.  
       // The format of the note will be Time punch <real time> rounded to <rounded time>

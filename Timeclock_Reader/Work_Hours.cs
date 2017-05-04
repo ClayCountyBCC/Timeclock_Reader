@@ -23,6 +23,17 @@ namespace Timeclock_Reader
 
     }
 
+    public Work_Hours(Timeclock_Data tcd, string DeptId)
+    {
+      EmployeeId = tcd.EmployeeId;
+      DepartmentId = DeptId;
+      WorkDate = tcd.RoundedPunchDate;
+      PayPeriodEnding = tcd.PayPeriodEnding;
+      WorkTimes = tcd.RoundedPunchTime_ToString;
+      WorkHours = 0;
+      TotalHours = 0;
+    }
+
     public static List<Work_Hours> Get(DateTime work_date)
     {
       // this query returns everything from the earliest workday we have a timeclock stamp for.
@@ -47,11 +58,10 @@ namespace Timeclock_Reader
     {
       string sql = @"
         UPDATE Work_Hours
-          SET work_hours=@WorkHours, 
-            work_times=@WorkTimes, 
-            total_hours=@TotalHours
-          WHERE employee_id=@EmployeeId 
-            AND work_date=@WorkDate;";
+          SET work_hours = @WorkHours, 
+            work_times = @WorkTimes, 
+            total_hours = @TotalHours
+          WHERE work_hours_id = @WorkHoursId";
       try
       {
         long l = Program.Exec_Query(sql, this, Program.CS_Type.Timestore);
@@ -103,9 +113,9 @@ namespace Timeclock_Reader
       DateTime d = DateTime.Today;
       for (int i = 0; i < 96; i++)
       {
-        tl.Add(d.AddMinutes(15 * i).ToString("hh:mm tt"));
+        tl.Add(d.AddMinutes(15 * i).ToString("h:mm tt"));
       }
-      tl.Add(d.AddSeconds(-1).ToString("hh:mm:ss tt")); // add the 11:59:59 PM entry
+      tl.Add(d.AddSeconds(-1).ToString("h:mm:ss tt")); // add the 11:59:59 PM entry
       return tl.ToArray();
     }
 
