@@ -57,15 +57,7 @@ namespace Timeclock_Reader
       Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
       Finplus_CS = ConfigurationManager.ConnectionStrings["Finplus"].ConnectionString;
       HandleFiles();
-
-      //var l = new List<Timeclock_Data>();
-      //var d = DateTime.Parse("1/1/2017 6:45:00 AM");
-      //for(int i = 0; i < 100; i++)
-      //{
-      //  l.Add(new Timeclock_Data("", 0, d.AddSeconds(i * 30)));
-      //}
-      //var t = l.Count();
-
+      HandleQqest();
     }
 
     static void HandleData(List<Timeclock_Data> current, string source)
@@ -90,8 +82,7 @@ namespace Timeclock_Reader
       // we should be saving punches if they don't exist yet.
       foreach (Timeclock_Data t in current)
       {
-        t.SavePunch();
-        t.SaveTimeStoreNote();
+        t.SavePunchAndNote();
       }
 
       // exclude stuff prior this this pay period, 
@@ -99,6 +90,8 @@ namespace Timeclock_Reader
       current = (from t in current
              where !t.IsPastCutoff()
              select t).ToList();
+
+      if (current.Count() == 0) return;
 
       // update our earliest date just in case it's changed
       earliest = (from t in current
@@ -136,6 +129,12 @@ namespace Timeclock_Reader
           w.Insert(); // this will create a row in Timestore.
         }
       }
+    }
+
+    static void HandleQqest()
+    {
+      DateTime start = DateTime.Parse("5/3/2017");
+      HandleData(Timeclock_Data.GetQqestData(start), Source_QQest);
     }
 
     static void HandleFiles()

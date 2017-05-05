@@ -84,7 +84,7 @@ namespace Timeclock_Reader
     {
       get
       {
-        return $"Timeclock punched at {RawPunchDate.ToString("MM/dd/yyyy hh:mm:ss AMPM") }, rounded to {RoundedPunchDate.ToString("MM/dd/yyyy hh:mm:ss AMPM")}";
+        return $"Timeclock punched at {RawPunchDate.ToString("MM/dd/yyyy hh:mm:ss tt") }, rounded to {RoundedPunchDate.ToString("MM/dd/yyyy hh:mm:ss tt")}";
       }
     }
 
@@ -143,7 +143,7 @@ namespace Timeclock_Reader
       string sql = @"
         SELECT 
           employee_id EmployeeId,
-          raw_punch_date RawPunchDate
+          raw_punch_date RawPunchDate,
           source SOURCE
         FROM Timeclock_Data
         WHERE source=@Source AND
@@ -187,6 +187,29 @@ namespace Timeclock_Reader
             AND rawpunch_ts >= @Start";
       return Program.Get_Data<Timeclock_Data>(sql, dbArgs, Program.CS_Type.Qqest);
     }
+
+    public bool SavePunchAndNote()
+    {
+      // this function will save this object's data to the timeclockdata table.
+      string sql = @"
+        INSERT INTO Timeclock_Data 
+        (employee_id, raw_punch_date, rounded_punch_date, source)
+        VALUES (@EmployeeId, @RawPunchDate, @RoundedPunchDate, @Source);
+        INSERT INTO notes 
+        (employee_id, pay_period_ending, note, note_added_by)
+        VALUES (@EmployeeId, @PayPeriodEnding, @Note, 'Timeclock_Reader');";
+      try
+      {
+        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
+      }
+      catch (Exception e)
+      {
+        Program.Log(e, sql);
+        return false;
+      }
+
+    }
+
 
     public bool SavePunch()
     {
