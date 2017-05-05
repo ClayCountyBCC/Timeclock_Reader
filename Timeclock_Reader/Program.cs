@@ -127,13 +127,19 @@ namespace Timeclock_Reader
 
           var w = new Work_Hours(t, Dept);
           w.Insert(); // this will create a row in Timestore.
+          wdl.Add(w); // let's add it to our existing rows.
         }
       }
     }
 
     static void HandleQqest()
     {
-      DateTime start = DateTime.Parse("5/3/2017");
+
+      DateTime start = DateTime.Parse("5/3/2017"); // default value of the date.
+      var tcdl = Timeclock_Data.GetLastSavedTimeClockData(Source_QQest);
+      // we're going to go all the way back to the pay period start if this is found
+      // because data in qqest can be changed whenever.
+      if (tcdl.Count > 0) start = tcdl.First().PayPeriodEnding.AddDays(-13).Date;  // use the pay period starting date
       HandleData(Timeclock_Data.GetQqestData(start), Source_QQest);
     }
 
@@ -251,37 +257,35 @@ namespace Timeclock_Reader
       }
     }
 
-    public static bool Save_Data<T>(string insertQuery, T item, CS_Type cs)
+    public static int Save_Data<T>(string insertQuery, T item, CS_Type cs)
     {
       try
       {
         using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
         {
-          db.Execute(insertQuery, item);
-          return true;
+          return db.Execute(insertQuery, item);
         }
       }
       catch (Exception ex)
       {
         Log(ex, insertQuery);
-        return false;
+        return -1;
       }
     }
 
-    public static bool Save_Data(string insertQuery, DynamicParameters dbA, CS_Type cs)
+    public static int Save_Data(string insertQuery, DynamicParameters dbA, CS_Type cs)
     {
       try
       {
         using (IDbConnection db = new SqlConnection(Get_ConnStr(cs)))
         {
-          db.Execute(insertQuery, dbA);
-          return true;
+          return db.Execute(insertQuery, dbA);
         }
       }
       catch (Exception ex)
       {
         Log(ex, insertQuery);
-        return false;
+        return -1;
       }
     }
 

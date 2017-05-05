@@ -84,7 +84,7 @@ namespace Timeclock_Reader
     {
       get
       {
-        return $"Timeclock punched at {RawPunchDate.ToString("MM/dd/yyyy hh:mm:ss tt") }, rounded to {RoundedPunchDate.ToString("MM/dd/yyyy hh:mm:ss tt")}";
+        return $"Timeclock punched on {RawPunchDate.Date.ToShortDateString()} at {RawPunchDate.ToString("hh:mm:ss tt") }, rounded to {RoundedPunchDate.ToString("hh:mm:ss tt")}";
       }
     }
 
@@ -160,6 +160,33 @@ namespace Timeclock_Reader
       }
     }
 
+    static public List<Timeclock_Data> GetLastSavedTimeClockData(string Source)
+    {
+    // this function returns the very newest Timeclock_Data row for the provided Source.
+    // This is so that we don't look at older days that have already been processed.
+    // we're going to use the PayperiodEnding field to look at all of that data.
+      var dbArgs = new DynamicParameters();
+      dbArgs.Add("@Source", Source);
+      string sql = @"
+        SELECT TOP 1
+          employee_id EmployeeId,
+          raw_punch_date RawPunchDate,
+          source SOURCE
+        FROM Timeclock_Data
+        WHERE source=@Source AND
+          raw_punch_date >= @Start
+        ORDER BY raw_punch_date DESC;";
+      try
+      {
+        return Program.Get_Data<Timeclock_Data>(sql, dbArgs, Program.CS_Type.Timestore);
+      }
+      catch (Exception ex)
+      {
+        Program.Log(ex);
+        return null;
+      }
+    }
+
     public bool Exists(List<Timeclock_Data> ltcd)
     {
       // this function is going to check and see if a record already exists in the list provided
@@ -200,47 +227,8 @@ namespace Timeclock_Reader
         VALUES (@EmployeeId, @PayPeriodEnding, @Note, 'Timeclock_Reader');";
       try
       {
-        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
-      }
-      catch (Exception e)
-      {
-        Program.Log(e, sql);
-        return false;
-      }
+        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore) > 0;
 
-    }
-
-
-    public bool SavePunch()
-    {
-      // this function will save this object's data to the timeclockdata table.
-      string sql = @"
-        INSERT INTO Timeclock_Data 
-        (employee_id, raw_punch_date, rounded_punch_date, source)
-        VALUES (@EmployeeId, @RawPunchDate, @RoundedPunchDate, @Source);";
-      try
-      {
-        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
-      }
-      catch (Exception e)
-      {
-        Program.Log(e, sql);
-        return false;
-      }
-
-    }
-
-    public bool SaveTimeStoreNote()
-    {
-      // finally, we'll add a note for each timeclock entry.  
-      // The format of the note will be Time punch <real time> rounded to <rounded time>
-      string sql = @"
-        INSERT INTO notes 
-        (employee_id, pay_period_ending, note, note_added_by)
-        VALUES (@EmployeeId, @PayPeriodEnding, @Note, 'Timeclock_Reader');";
-      try
-      {
-        return Program.Save_Data<Timeclock_Data>(sql, this, Program.CS_Type.Timestore);
       }
       catch (Exception e)
       {

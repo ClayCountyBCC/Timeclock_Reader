@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace Timeclock_Reader
 {
@@ -108,13 +110,6 @@ namespace Timeclock_Reader
       try
       {
         long l = Program.Exec_Query(sql, this, Program.CS_Type.Timestore);
-        if (l > 1)
-        {
-          Program.Log("Duplicate entries found in the Work_Hours table in Timestore",
-            EmployeeId.ToString(),
-            WorkDate.ToShortDateString(),
-            "");
-        }
         return (l > 0);
       }
       catch (Exception ex)
@@ -126,6 +121,15 @@ namespace Timeclock_Reader
     
     public bool Insert()
     {
+      var dbArgs = new Dapper.DynamicParameters();
+      dbArgs.Add("@whId", dbType: DbType.Int64, direction: ParameterDirection.Output);
+      dbArgs.Add("@EmployeeId", EmployeeId);
+      dbArgs.Add("@WorkHours", WorkHours);
+      dbArgs.Add("@WorkDate", WorkDate);
+      dbArgs.Add("@DepartmentId", DepartmentId);
+      dbArgs.Add("@PayPeriodEnding", PayPeriodEnding);
+      dbArgs.Add("@WorkTimes", WorkTimes);
+      dbArgs.Add("@TotalHours", TotalHours);
       string sql = @"
         INSERT INTO Work_Hours 
           (employee_id, dept_id, pay_period_ending, 
@@ -138,10 +142,13 @@ namespace Timeclock_Reader
           @WorkDate, @WorkTimes, 0, @WorkHours, 0, 
           0, @TotalHours, 0, 0, 
           '', @EmployeeId, 'TCReader', 'TCReader', 
-          'TCReader');";
+          'TCReader');
+         SET @whId = SCOPE_IDENTITY();";
       try
       {
-        return Program.Save_Data<Work_Hours>(sql, this, Program.CS_Type.Timestore);
+        int i = Program.Save_Data(sql, dbArgs, Program.CS_Type.Timestore);
+        WorkHoursId = dbArgs.Get<Int64>("@whId");
+        return i > 0;
       }
       catch(Exception ex)
       {
