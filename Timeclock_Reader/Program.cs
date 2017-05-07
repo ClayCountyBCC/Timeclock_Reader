@@ -150,7 +150,7 @@ namespace Timeclock_Reader
 
       HandleData(ParseFiles(files), Source_File);
 
-      // move old files
+      // move old files so that we don't process them again needlessly.
       MoveOldFiles(files);
     }
 
