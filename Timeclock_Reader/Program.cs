@@ -72,8 +72,8 @@ namespace Timeclock_Reader
       var employees = Employee.Get();
       // remove duplicates
       current = (from t in current
-             where !t.Exists(existing)
-             select t).ToList();
+                 where !t.Exists(existing)
+                 select t).ToList();
 
       if (current.Count() == 0) return; // if we don't find any entries in our files, we should exit.
       // At this stage, tcd should contain any data that doesn't exist
@@ -88,8 +88,9 @@ namespace Timeclock_Reader
       // exclude stuff prior this this pay period, 
       // we wouldn't use this data to update Timestore.
       current = (from t in current
-             where !t.IsPastCutoff()
-             select t).ToList();
+                 orderby t.RawPunchDate descending
+                 where !t.IsPastCutoff()
+                 select t).ToList();
 
       if (current.Count() == 0) return;
 
@@ -104,8 +105,8 @@ namespace Timeclock_Reader
       foreach(Timeclock_Data t in current)
       {
         var check = (from w in wdl
-                     where w.EmployeeId == t.EmployeeId
-                     && w.WorkDate.Date == t.RoundedPunchDate.Date
+                     where w.EmployeeId == t.EmployeeId && 
+                     w.WorkDate.Date == t.RoundedPunchDate.Date
                      select w);
         if(check.Count() > 0)
         {

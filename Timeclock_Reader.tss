@@ -2,16 +2,19 @@
 <ArrayOfArrayOfArrayOfString xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <ArrayOfArrayOfString>
     <ArrayOfString>
-      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\timeclock_reader\timeclock_reader\errorlog.cs</string>
-    </ArrayOfString>
-    <ArrayOfString>
-      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\timeclock_reader\timeclock_reader\work_hours.cs</string>
+      <string>C:\Users\mccartneyd\Documents\Visual Studio 2017\Projects\Timeclock_Reader\Timeclock_Reader\Program.cs</string>
     </ArrayOfString>
     <ArrayOfString>
       <string>c:\users\mccartneyd\documents\visual studio 2017\projects\timeclock_reader\timeclock_reader\timeclock_data.cs</string>
     </ArrayOfString>
     <ArrayOfString>
-      <string>C:\Users\mccartneyd\Documents\Visual Studio 2017\Projects\Timeclock_Reader\Timeclock_Reader\Program.cs</string>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\timeclock_reader\timeclock_reader\work_hours.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\timeclock_reader\timeclock_reader\employee.cs</string>
+    </ArrayOfString>
+    <ArrayOfString>
+      <string>c:\users\mccartneyd\documents\visual studio 2017\projects\timeclock_reader\timeclock_reader\app.config</string>
     </ArrayOfString>
   </ArrayOfArrayOfString>
 </ArrayOfArrayOfArrayOfString>

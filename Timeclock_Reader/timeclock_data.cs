@@ -173,8 +173,7 @@ namespace Timeclock_Reader
           raw_punch_date RawPunchDate,
           source SOURCE
         FROM Timeclock_Data
-        WHERE source=@Source AND
-          raw_punch_date >= @Start
+        WHERE source=@Source 
         ORDER BY raw_punch_date DESC;";
       try
       {

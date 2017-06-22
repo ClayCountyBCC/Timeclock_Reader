@@ -40,32 +40,22 @@ namespace Timeclock_Reader
     {
       // this function will take a new timepunch and add it to 
       // the existing work_hours row that we already have for that user.
-      if(WorkTimes.Length > 0)
-      {
-        WorkTimes += " - " + tcd.RoundedPunchTime_ToString;
-      }
-      else
-      {
-        WorkTimes = tcd.RoundedPunchTime_ToString;
-      }
+      List<string> times = WorkTimes.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries).ToList();
+      times.Add(tcd.RoundedPunchTime_ToString);
+      times = times.OrderBy(x => DateTime.Parse(x)).ToList(); // ordered
 
-      string[] times = WorkTimes.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
 
       float initialWH = WorkHours;
       float initialTH = TotalHours;
 
-      if (times.Length % 2 == 1)
-      {
-        // We added an odd punch, we shouldn't update any time calculations
-
-      }
-      else
+      // We're adding an odd punch, we shouldn't update any time calculations
+      if (times.Count() % 2 != 1)
       {
         // we need to get the hours between each of our entries
         // sum it all up and update Workhours and TotalHours
         // we've already updated WorkTimes
         float WH = 0;
-        for(int i = 0; i < times.Length; i += 2)
+        for(int i = 0; i < times.Count(); i += 2)
         {
           int start = Array.IndexOf(tl, times[i]);
           int end = Array.IndexOf(tl, times[i+1]);
@@ -77,6 +67,7 @@ namespace Timeclock_Reader
           TotalHours = TotalHours - initialWH + WorkHours;
         }
       }
+      WorkTimes = string.Join(" - ", times);
     }
 
     public static List<Work_Hours> Get(DateTime work_date)
