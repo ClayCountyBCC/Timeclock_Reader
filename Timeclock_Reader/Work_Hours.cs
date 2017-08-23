@@ -45,11 +45,6 @@ namespace Timeclock_Reader
       {
         times.Add(tcd.RoundedPunchTime_ToString);
       }
-      else
-      {
-        //caught it
-        int i = 0;
-      }
       times = times.OrderBy(x => DateTime.Parse(x)).ToList(); // ordered
 
 
