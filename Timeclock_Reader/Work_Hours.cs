@@ -29,7 +29,7 @@ namespace Timeclock_Reader
     {
       EmployeeId = tcd.EmployeeId;
       DepartmentId = DeptId;
-      WorkDate = tcd.RoundedPunchDate;
+      WorkDate = tcd.RoundedPunchDate.Date;
       PayPeriodEnding = tcd.PayPeriodEnding;
       WorkTimes = tcd.RoundedPunchTime_ToString;
       WorkHours = 0;
@@ -41,7 +41,15 @@ namespace Timeclock_Reader
       // this function will take a new timepunch and add it to 
       // the existing work_hours row that we already have for that user.
       List<string> times = WorkTimes.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries).ToList();
-      times.Add(tcd.RoundedPunchTime_ToString);
+      if (!times.Contains(tcd.RoundedPunchTime_ToString))
+      {
+        times.Add(tcd.RoundedPunchTime_ToString);
+      }
+      else
+      {
+        //caught it
+        int i = 0;
+      }
       times = times.OrderBy(x => DateTime.Parse(x)).ToList(); // ordered
 
 
@@ -86,7 +94,7 @@ namespace Timeclock_Reader
         WHERE work_date >= CAST(@WorkDate AS DATE)";
 
       DynamicParameters dp = new DynamicParameters();
-      dp.Add("@WorkDate", DateTime.Today);
+      dp.Add("@WorkDate", work_date);
       return Program.Get_Data<Work_Hours>(sql, dp, Program.CS_Type.Timestore);
     }
 

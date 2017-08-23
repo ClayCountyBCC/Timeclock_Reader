@@ -51,13 +51,41 @@ namespace Timeclock_Reader
 
     static void Main(string[] args)
     {
-      Log_CS = ConfigurationManager.ConnectionStrings["Logs"].ConnectionString;
-      Timestore_QA_CS = ConfigurationManager.ConnectionStrings["TimestoreQA"].ConnectionString;
-      Timestore_CS = ConfigurationManager.ConnectionStrings["TimestoreProd"].ConnectionString;
-      Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
-      Finplus_CS = ConfigurationManager.ConnectionStrings["Finplus"].ConnectionString;
-      HandleFiles();
-      HandleQqest();
+      //BuildPPDList();
+      try
+      {
+        Log_CS = ConfigurationManager.ConnectionStrings["Logs"].ConnectionString;
+        Timestore_QA_CS = ConfigurationManager.ConnectionStrings["TimestoreQA"].ConnectionString;
+        Timestore_CS = ConfigurationManager.ConnectionStrings["TimestoreProd"].ConnectionString;
+        Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
+        Finplus_CS = ConfigurationManager.ConnectionStrings["Finplus"].ConnectionString;
+        HandleFiles();
+        HandleQqest();
+      }
+      catch(Exception ex)
+      {
+        new ErrorLog(ex);
+        Console.WriteLine(ex.ToString());
+        Console.WriteLine(ex.StackTrace.ToString());
+        Console.WriteLine(ex.Source.ToString());
+      }
+    }
+
+    static void BuildPPDList()
+    {
+      var sb = new StringBuilder();
+      int i = 0;
+      DateTime Start = DateTime.Parse("10/10/2016");
+      DateTime End = DateTime.Parse("1/15/2017");
+      while (Start.AddDays(i) < End)
+      {
+        var d = Start.AddDays(i);
+        sb.Append(d.ToShortDateString());
+        sb.Append('\t').AppendLine(GetPayPeriodStart(d).AddDays(13).ToShortDateString());
+        i++;
+      }
+      string s = sb.ToString();
+
     }
 
     static void HandleData(List<Timeclock_Data> current, string source)
@@ -107,7 +135,7 @@ namespace Timeclock_Reader
         var check = (from w in wdl
                      where w.EmployeeId == t.EmployeeId && 
                      w.WorkDate.Date == t.RoundedPunchDate.Date
-                     select w);
+                     select w).ToList();
         if(check.Count() > 0)
         {
           // we already have an entry for this person in Timestore, 

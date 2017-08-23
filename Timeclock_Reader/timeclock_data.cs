@@ -208,9 +208,11 @@ namespace Timeclock_Reader
             rawpunch_ts RawPunchDate
           FROM empMain 
           INNER JOIN timeWorkingPunch ON empMain.employee_id = timeWorkingPunch.employee_id 
-          WHERE timeWorkingPunch.active_yn = 1 
+          WHERE 
+            timeWorkingPunch.active_yn = 1 
             AND rawpunch_ts <> '1/1/2000'
-            AND rawpunch_ts >= @Start";
+            AND rawpunch_ts >= @Start
+          ORDER BY empMain.employeeid, rawpunch_ts ASC";
       return Program.Get_Data<Timeclock_Data>(sql, dbArgs, Program.CS_Type.Qqest);
     }
 
