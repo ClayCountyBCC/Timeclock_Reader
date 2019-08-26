@@ -60,7 +60,7 @@ namespace Timeclock_Reader
         Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
         Finplus_CS = ConfigurationManager.ConnectionStrings["Finplus"].ConnectionString;
         HandleFiles();
-        HandleQqest();
+        //HandleQqest();
       }
       catch(Exception ex)
       {
@@ -234,8 +234,8 @@ namespace Timeclock_Reader
       switch (Environment.MachineName.ToUpper())
       {
         case "MISML01":
-          return false;
-        case "PRODSERVER":
+          return true;
+        case "CLAYBCCBE03":
           return true;
         default:
           return false;
