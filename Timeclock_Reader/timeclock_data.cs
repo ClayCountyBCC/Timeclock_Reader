@@ -197,24 +197,24 @@ namespace Timeclock_Reader
               select l).Count() > 0;
     }
 
-    static public List<Timeclock_Data> GetQqestData(DateTime Start)
-    {
-      var dbArgs = new DynamicParameters();
-      dbArgs.Add("@Start", Start);
-      string sql = $@"
-          SELECT 
-            empMain.employeeid EmployeeId,
-            'Q' AS Source,
-            rawpunch_ts RawPunchDate
-          FROM empMain 
-          INNER JOIN timeWorkingPunch ON empMain.employee_id = timeWorkingPunch.employee_id 
-          WHERE 
-            timeWorkingPunch.active_yn = 1 
-            AND rawpunch_ts <> '1/1/2000'
-            AND rawpunch_ts >= @Start
-          ORDER BY empMain.employeeid, rawpunch_ts ASC";
-      return Program.Get_Data<Timeclock_Data>(sql, dbArgs, Program.CS_Type.Qqest);
-    }
+    //static public List<Timeclock_Data> GetQqestData(DateTime Start)
+    //{
+    //  var dbArgs = new DynamicParameters();
+    //  dbArgs.Add("@Start", Start);
+    //  string sql = $@"
+    //      SELECT 
+    //        empMain.employeeid EmployeeId,
+    //        'Q' AS Source,
+    //        rawpunch_ts RawPunchDate
+    //      FROM empMain 
+    //      INNER JOIN timeWorkingPunch ON empMain.employee_id = timeWorkingPunch.employee_id 
+    //      WHERE 
+    //        timeWorkingPunch.active_yn = 1 
+    //        AND rawpunch_ts <> '1/1/2000'
+    //        AND rawpunch_ts >= @Start
+    //      ORDER BY empMain.employeeid, rawpunch_ts ASC";
+    //  return Program.Get_Data<Timeclock_Data>(sql, dbArgs, Program.CS_Type.Qqest);
+    //}
 
     public bool SavePunchAndNote()
     {

@@ -19,7 +19,7 @@ namespace Timeclock_Reader
     public static string Log_CS = "";
     public static string Timestore_QA_CS = "";
     public static string Timestore_CS = "";
-    public static string Qqest_CS = "";
+    //public static string Qqest_CS = "";
     public static string Finplus_CS = "";
     const string File_Path = @"\\claybccpubtime\c$\TA100PRO\CLK\RFILES"; // location of the files we're going to parse.
     const string Old_File_Path = @"\\claybccpubtime\c$\TA100PRO\CLK\RFILES\Old";
@@ -57,7 +57,7 @@ namespace Timeclock_Reader
         Log_CS = ConfigurationManager.ConnectionStrings["Logs"].ConnectionString;
         Timestore_QA_CS = ConfigurationManager.ConnectionStrings["TimestoreQA"].ConnectionString;
         Timestore_CS = ConfigurationManager.ConnectionStrings["TimestoreProd"].ConnectionString;
-        Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
+        //Qqest_CS = ConfigurationManager.ConnectionStrings["Qqest"].ConnectionString;
         Finplus_CS = ConfigurationManager.ConnectionStrings["Finplus"].ConnectionString;
         HandleFiles();
         //HandleQqest();
@@ -161,16 +161,16 @@ namespace Timeclock_Reader
       }
     }
 
-    static void HandleQqest()
-    {
+    //static void HandleQqest()
+    //{
 
-      DateTime start = DateTime.Parse("5/3/2017"); // default value of the date.
-      var tcdl = Timeclock_Data.GetLastSavedTimeClockData(Source_QQest);
-      // we're going to go all the way back to the pay period start if this is found
-      // because data in qqest can be changed whenever.
-      if (tcdl.Count > 0) start = tcdl.First().PayPeriodEnding.AddDays(-13).Date;  // use the pay period starting date
-      HandleData(Timeclock_Data.GetQqestData(start), Source_QQest);
-    }
+    //  DateTime start = DateTime.Parse("5/3/2017"); // default value of the date.
+    //  var tcdl = Timeclock_Data.GetLastSavedTimeClockData(Source_QQest);
+    //  // we're going to go all the way back to the pay period start if this is found
+    //  // because data in qqest can be changed whenever.
+    //  if (tcdl.Count > 0) start = tcdl.First().PayPeriodEnding.AddDays(-13).Date;  // use the pay period starting date
+    //  HandleData(Timeclock_Data.GetQqestData(start), Source_QQest);
+    //}
 
     static void HandleFiles()
     {
@@ -433,8 +433,8 @@ namespace Timeclock_Reader
         case CS_Type.Log:
           return Log_CS;
 
-        case CS_Type.Qqest:
-          return Qqest_CS;
+        //case CS_Type.Qqest:
+        //  return Qqest_CS;
 
         case CS_Type.Timestore:
           if (UseProduction())
